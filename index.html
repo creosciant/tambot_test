@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TamBot — AI Assistant</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0d2318;
+      color: #f9f6ef;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .loading {
+      text-align: center;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(201,168,76,0.2);
+      border-top: 3px solid #c9a84c;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading">
+    <div class="spinner"></div>
+    <p>Loading TamBot...</p>
+  </div>
+
+  <script>
+    // Detect if device is mobile
+    function isMobileDevice() {
+      // Check user agent
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      
+      // Mobile user agents
+      if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase())) {
+        return true;
+      }
+      
+      // Check screen width (responsive design breakpoint)
+      if (window.innerWidth <= 768) {
+        return true;
+      }
+      
+      return false;
+    }
+
+    // Redirect to appropriate version
+    if (isMobileDevice()) {
+      window.location.href = '/mobile.html';
+    } else {
+      window.location.href = '/main.html';
+    }
+  </script>
+</body>
+</html>

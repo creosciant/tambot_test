@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>TamTam — AI Assistant</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green-deep:    #0d2318;
+      --green-mid:     #183d28;
+      --green-light:   #245c3b;
+      --green-accent:  #2e7d52;
+      --gold:          #c9a84c;
+      --gold-light:    #e2c476;
+      --gold-pale:     #f5e9c2;
+      --white:         #f9f6ef;
+      --white-dim:     rgba(249,246,239,0.6);
+      --white-ghost:   rgba(249,246,239,0.08);
+      --border:        rgba(201,168,76,0.18);
+      --safe-bottom:   max(16px, env(safe-area-inset-bottom));
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--green-deep);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      color: var(--white);
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 80% 20%, rgba(201,168,76,0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 60% at 10% 80%, rgba(46,125,82,0.12) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    /* ── MAIN APP ── */
+    .app {
+      position: relative; z-index: 1;
+      display: flex;
+      flex-direction: row;
+      height: 100vh;
+      height: 100dvh;
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: max(12px, env(safe-area-inset-top)) 16px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      gap: 12px;
+    }
+
+    .sidebar-menu-btn {
+      background: transparent;
+      border: none;
+      color: var(--white-dim);
+      cursor: pointer;
+      font-size: 1.2rem;
+      padding: 4px;
+      transition: color 0.2s;
+      flex-shrink: 0;
+    }
+
+    .sidebar-menu-btn:active {
+      color: var(--gold-light);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar {
+      width: 280px;
+      background: var(--green-mid);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease, width 0.3s ease;
+      flex-shrink: 0;
+      overflow: hidden;
+      position: relative;
+      z-index: 100;
+    }
+
+    .sidebar.minimized {
+      width: 60px;
+    }
+
+    .sidebar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .sidebar-logo img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1.5px solid var(--gold);
+    }
+
+    .sidebar-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .sidebar.minimized .sidebar-logo img,
+    .sidebar.minimized .sidebar-title {
+      display: none;
+    }
+
+    .sidebar-toggle {
+      background: transparent;
+      border: none;
+      color: var(--white-dim);
+      cursor: pointer;
+      font-size: 1.2rem;
+      padding: 4px;
+      transition: color 0.2s;
+    }
+
+    .sidebar-toggle:active {
+      color: var(--gold-light);
+    }
+
+    .sidebar-search {
+      padding: 10px 12px;
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-search input {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 6px 8px;
+      color: var(--white);
+      font-size: 0.75rem;
+      outline: none;
+    }
+
+    .sidebar-search input:focus {
+      border-color: var(--gold);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .sidebar-search button {
+      background: transparent;
+      border: none;
+      color: var(--white-dim);
+      cursor: pointer;
+      font-size: 0.65rem;
+      padding: 6px 8px;
+      transition: color 0.2s;
+    }
+
+    .sidebar-search button:active {
+      color: var(--gold-light);
+    }
+
+    .sidebar.minimized .sidebar-search input,
+    .sidebar.minimized .sidebar-search button {
+      display: none;
+    }
+
+    .chat-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .chat-list::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .chat-list::-webkit-scrollbar-thumb {
+      background: rgba(201,168,76,0.3);
+      border-radius: 2px;
+    }
+
+    .chat-item {
+      padding: 12px 16px;
+      background: transparent;
+      border: none;
+      color: var(--white-dim);
+      cursor: pointer;
+      text-align: left;
+      font-size: 0.8rem;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      border-left: 2px solid transparent;
+      transition: all 0.2s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chat-item:active {
+      background: rgba(201,168,76,0.1);
+      border-left-color: var(--gold);
+      color: var(--white);
+    }
+
+    .sidebar.minimized .chat-item {
+      padding: 12px;
+      font-size: 0;
+    }
+
+    .sidebar-footer {
+      border-top: 1px solid var(--border);
+      padding: 0;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .sidebar-nav-btn {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: var(--white-dim);
+      cursor: pointer;
+      padding: 10px 16px;
+      font-size: 0.75rem;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      border-left: 2px solid transparent;
+    }
+
+    .sidebar-nav-btn:active {
+      color: var(--gold-light);
+      background: rgba(201,168,76,0.1);
+      border-left-color: var(--gold);
+    }
+
+    .sidebar-nav-btn.active {
+      color: var(--white);
+      background: rgba(201,168,76,0.15);
+      border-left-color: var(--gold);
+    }
+
+    .sidebar.minimized .sidebar-nav-btn {
+      padding: 10px;
+      justify-content: center;
+    }
+
+    .sidebar.minimized .sidebar-nav-btn span {
+      display: none;
+    }
+
+    .logo-mark {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 1.5px solid var(--gold);
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(201,168,76,0.08);
+      cursor: pointer;
+    }
+
+    .logo-mark img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .logo-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .logo-text .wordmark {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+    }
+
+    .logo-text .tagline {
+      font-size: 0.45rem;
+      color: var(--white-dim);
+      letter-spacing: 0.05em;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .header-btn {
+      padding: 6px 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--white-dim);
+      cursor: pointer;
+      font-size: 0.5rem;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.1em;
+      border-radius: 2px;
+      transition: all 0.2s;
+    }
+
+    .header-btn:active {
+      background: var(--white-ghost);
+      border-color: var(--gold);
+      color: var(--white);
+    }
+
+    /* ── CHAT VIEW ── */
+    .chat-view {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 0 12px;
+      gap: 12px;
+      display: flex;
+      flex-direction: column;
+      padding-right: 8px;
+    }
+
+    .messages::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .messages::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .messages::-webkit-scrollbar-thumb {
+      background: rgba(201,168,76,0.3);
+      border-radius: 2px;
+    }
+
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .empty-ornament {
+      font-size: 1.5rem;
+      opacity: 0.4;
+    }
+
+    .empty-state h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .empty-state p {
+      font-size: 0.75rem;
+      color: var(--white-dim);
+    }
+
+    .suggestions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+      padding: 0 16px;
+    }
+
+    .suggestion-pill {
+      padding: 10px 14px;
+      background: rgba(201,168,76,0.08);
+      border: 1px solid var(--border);
+      color: var(--white);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      transition: all 0.2s;
+      text-align: left;
+    }
+
+    .suggestion-pill:active {
+      background: rgba(201,168,76,0.15);
+      border-color: var(--gold);
+    }
+
+    /* ── MESSAGES ── */
+    .msg {
+      display: flex;
+      gap: 4px;
+      align-items: flex-start;
+      padding: 0 16px;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg.user { 
+      flex-direction: row-reverse;
+      gap: 8px;
+    }
+
+    .avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.5rem;
+      background: rgba(201,168,76,0.1);
+    }
+
+    .avatar.user {
+      background: var(--green-accent);
+      color: var(--white);
+      font-weight: 600;
+    }
+
+    .avatar.ai img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    .bubble {
+      max-width: 85%;
+      padding: 10px 12px;
+      border-radius: 2px;
+      font-size: 0.85rem;
+      font-weight: 300;
+      line-height: 1.5;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .msg.ai .bubble {
+      background: var(--white-ghost);
+      border: 1px solid var(--border);
+      border-left: 2px solid var(--gold);
+      color: var(--white);
+    }
+
+    .msg.user .bubble {
+      background: var(--green-light);
+      border: 1px solid rgba(46,125,82,0.4);
+      color: var(--white);
+      text-align: center;
+      padding: 10px 14px;
+      width: 85%;
+    }
+
+    .msg-meta {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.5rem;
+      letter-spacing: 0.1em;
+      color: var(--white-dim);
+      margin-top: 2px;
+    }
+
+    .typing-bubble {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+    }
+
+    .dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--gold);
+      animation: bounce 1.4s ease-in-out infinite;
+    }
+
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+      40% { opacity: 1; transform: translateY(-6px); }
+    }
+
+    /* ── INPUT ── */
+    .input-wrap {
+      padding: 10px 12px 0;
+      flex-shrink: 0;
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+    }
+
+    .input-bar {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      background: var(--green-mid);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 6px 8px;
+      position: relative;
+    }
+
+    textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--white);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 0.9rem;
+      font-weight: 300;
+      line-height: 1.4;
+      padding: 8px;
+      resize: none;
+      min-height: 40px;
+    }
+
+    textarea::placeholder {
+      color: rgba(249,246,239,0.2);
+      font-style: italic;
+    }
+
+    .send-btn {
+      background: transparent;
+      border: none;
+      color: var(--gold);
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: color 0.2s;
+    }
+
+    .send-btn:active {
+      color: var(--gold-light);
+    }
+
+    .send-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .input-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 8px;
+      font-size: 0.45rem;
+      color: var(--white-dim);
+    }
+
+    .char-count {
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* ── MODALS ── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--green-mid);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--gold);
+      width: 90vw;
+      max-width: 400px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 20px;
+      border-radius: 2px;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    .modal h3 {
+      font-size: 1rem;
+      margin-bottom: 4px;
+    }
+
+    .modal p {
+      font-size: 0.75rem;
+      color: var(--white-dim);
+      margin-bottom: 16px;
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: transparent;
+      border: none;
+      color: var(--white-dim);
+      cursor: pointer;
+      font-size: 1.2rem;
+      transition: color 0.2s;
+    }
+
+    .modal-close-btn:active {
+      color: var(--gold-light);
+    }
+
+    /* ── AUTH MODAL ── */
+    .auth-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .auth-toggle-btn {
+      flex: 1;
+      padding: 8px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--white-dim);
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      transition: all 0.2s;
+    }
+
+    .auth-toggle-btn.active {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--green-deep);
+    }
+
+    .auth-form-group {
+      margin-bottom: 12px;
+    }
+
+    .auth-form-group label {
+      display: block;
+      font-size: 0.75rem;
+      margin-bottom: 4px;
+      color: var(--gold-light);
+    }
+
+    .auth-form-group input {
+      width: 100%;
+      padding: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--white);
+      font-size: 0.8rem;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      outline: none;
+    }
+
+    .auth-form-group input:focus {
+      border-color: var(--gold);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .auth-message {
+      display: none;
+      padding: 8px;
+      background: rgba(255,0,0,0.1);
+      border: 1px solid rgba(255,0,0,0.2);
+      border-radius: 2px;
+      color: #ff6b6b;
+      font-size: 0.7rem;
+      margin-bottom: 12px;
+    }
+
+    .auth-message.success {
+      background: rgba(76,175,80,0.1);
+      border-color: rgba(76,175,80,0.2);
+      color: #81c784;
+    }
+
+    .auth-submit-btn {
+      width: 100%;
+      padding: 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--white);
+      border-radius: 2px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      transition: all 0.2s;
+    }
+
+    .auth-submit-btn:active {
+      background: var(--white-ghost);
+      border-color: var(--gold);
+    }
+
+    .auth-close-btn {
+      width: 100%;
+      padding: 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--white-dim);
+      border-radius: 2px;
+      cursor: pointer;
+      font-size: 0.7rem;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.1em;
+      margin-top: 12px;
+      transition: all 0.2s;
+    }
+
+    .auth-close-btn:active {
+      background: var(--white-ghost);
+      color: var(--white);
+    }
+
+    /* ── SETTINGS MODAL ── */
+    .settings-modal {
+      width: 90vw;
+      max-width: 400px;
+    }
+
+    .settings-modal h3 {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .settings-close {
+      background: transparent;
+      border: none;
+      color: var(--white-dim);
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
+
+    .settings-section {
+      margin-top: 16px;
+    }
+
+    .settings-section-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      color: var(--gold-light);
+      letter-spacing: 0.15em;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(201,168,76,0.2);
+    }
+
+    .settings-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      font-size: 0.8rem;
+      border-bottom: 1px solid rgba(201,168,76,0.1);
+    }
+
+    .settings-item:last-child {
+      border-bottom: none;
+    }
+
+    .settings-toggle {
+      width: 36px;
+      height: 20px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .settings-toggle.active {
+      background: var(--gold);
+      border-color: var(--gold);
+    }
+
+    .settings-toggle::after {
+      content: '';
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: var(--white);
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: left 0.2s;
+    }
+
+    .settings-toggle.active::after {
+      left: 20px;
+    }
+
+    .settings-select {
+      padding: 6px 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--white);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    /* ── LOGO MODAL ── */
+    .modal-error {
+      color: #ff6b6b;
+      font-size: 0.7rem;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 8px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--white-dim);
+      border-radius: 2px;
+      cursor: pointer;
+      font-size: 0.7rem;
+      transition: all 0.2s;
+    }
+
+    .modal-btn.apply {
+      color: var(--gold-light);
+      border-color: var(--gold);
+    }
+
+    .modal-btn:active {
+      background: var(--white-ghost);
+    }
+
+    .modal input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--white);
+      font-size: 0.8rem;
+      outline: none;
+      margin-bottom: 8px;
+    }
+
+    .modal input[type="text"]:focus {
+      border-color: var(--gold);
+      background: rgba(255,255,255,0.08);
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <img id="sidebarLogoImg" src="tambot_logo.png" alt="Logo"/>
+        <span class="sidebar-title">TamTamAI</span>
+      </div>
+      <button class="sidebar-toggle" onclick="toggleSidebar()">‹</button>
+    </div>
+
+    <div class="sidebar-search">
+      <input type="text" placeholder="Search..."/>
+      <button title="Sort">⚙</button>
+    </div>
+
+    <div class="chat-list">
+      <button class="chat-item">Homework Help</button>
+      <button class="chat-item">Course Notes</button>
+      <button class="chat-item">Project Ideas</button>
+      <button class="chat-item">Study Schedule</button>
+      <button class="chat-item">Event Planning</button>
+      <button class="chat-item">Campus Info</button>
+      <button class="chat-item">AI Learning</button>
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="sidebar-nav-btn active" onclick="switchNav('chat')" data-view="chat">
+        <span>💬 Chat</span>
+      </button>
+      <button class="sidebar-nav-btn" onclick="switchNav('settings')" data-view="settings">
+        <span>⚙ Settings</span>
+      </button>
+      <button class="sidebar-nav-btn" onclick="switchNav('account')" data-view="account">
+        <span>👤 Account</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+  <header>
+    <button class="sidebar-menu-btn" onclick="toggleSidebar()" title="Toggle sidebar">☰</button>
+    <div class="logo">
+      <div class="logo-mark">
+        <img id="logoImg" src="tambot_logo.png" alt="Logo"/>
+      </div>
+      <div class="logo-text">
+        <span class="wordmark">TamTam</span>
+        <span class="tagline">AI Assistant</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="header-btn" onclick="clearChat()" id="clearBtn">Clear</button>
+      <button class="header-btn" onclick="showAuthModal()">Sign In</button>
+    </div>
+  </header>
+
+  <!-- CHAT VIEW -->
+  <div id="chatView" class="chat-view">
+    <div class="messages" id="messages">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-ornament">✦ ✦ ✦</div>
+        <h2>How may I assist?</h2>
+        <p>Ask me anything — I'm here to help</p>
+        <div class="suggestions">
+          <button class="suggestion-pill" onclick="sendSuggestion('Summarize deadlines this week')">Summarize deadlines this week</button>
+          <button class="suggestion-pill" onclick="sendSuggestion('Write an email to a professor or department')">Write an email to a professor</button>
+          <button class="suggestion-pill" onclick="sendSuggestion('Look up my schedule')">Look up my schedule</button>
+          <button class="suggestion-pill" onclick="sendSuggestion('What are the ongoing events in the university this week?')">University events this week</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- INPUT -->
+    <div class="input-wrap">
+      <div class="input-bar">
+        <textarea
+          id="userInput"
+          placeholder="Message TamTam..."
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this); updateCharCount(this)"></textarea>
+        <button class="send-btn" onclick="sendMessage()" title="Send">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16.6915026,12.4744748 L3.50612381,13.2599618 C3.19218622,13.2599618 3.03521743,13.4170592 3.03521743,13.5741566 L1.15159189,20.0151496 C0.8376543,20.8006365 0.99,21.89 1.77946707,22.52 C2.41,22.99 3.50612381,23.1 4.13399899,22.8429026 L21.714504,14.0454487 C22.6563168,13.5741566 23.1272231,12.6315722 22.9702544,11.6889879 L4.13399899,1.16 C3.34915502,0.9 2.40734225,0.99 1.77946707,1.4328318 C0.994623095,2.06 0.837654326,3.16 1.15159189,3.94 L3.03521743,10.381 C3.03521743,10.5381217 3.19218622,10.6952191 3.50612381,10.6952191 L16.6915026,11.4807059 C16.6915026,11.4807059 17.1624089,11.4807059 17.1624089,11.0378752 L17.1624089,12.0804595 C17.1624089,12.5232903 16.6915026,12.4744748 16.6915026,12.4744748 Z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="input-footer">
+        <span class="input-hint">↵ Return to send</span>
+        <span class="char-count" id="charCount">0 / 2000</span>
+      </div>
+    </div>
+  </div>
+
+  </div> <!-- END MAIN-CONTENT -->
+
+</div>
+
+<!-- LOGO MODAL -->
+<div class="modal-backdrop" id="logoModal" onclick="if(event.target===this)closeLogoModal()">
+  <div class="modal">
+    <button class="modal-close-btn" onclick="closeLogoModal()">✕</button>
+    <h3>Set Logo Image</h3>
+    <p>Paste the file path to your image below</p>
+    <input type="text" id="logoPathInput" placeholder="e.g. C:\Users\you\logo.png"/>
+    <div class="modal-error" id="logoError"></div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeLogoModal()">Cancel</button>
+      <button class="modal-btn apply" onclick="applyLogo()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-backdrop" id="authModal" onclick="if(event.target===this)closeAuthModal()">
+  <div class="modal">
+    <h3 id="authTitle">Sign In</h3>
+    <p class="subtitle" id="authSubtitle">Welcome back</p>
+
+    <div class="auth-toggle">
+      <button class="auth-toggle-btn active" onclick="switchAuthMode('login')">Login</button>
+      <button class="auth-toggle-btn" onclick="switchAuthMode('signup')">Sign Up</button>
+    </div>
+
+    <form id="authForm" onsubmit="handleAuthSubmit(event)">
+      <div id="signupEmailGroup" class="auth-form-group" style="display: none;">
+        <label for="signupEmail">Email</label>
+        <input type="email" id="signupEmail" placeholder="your@email.com"/>
+      </div>
+
+      <div class="auth-form-group">
+        <label for="authUsername">Email or Username</label>
+        <input type="text" id="authUsername" placeholder="email@university.edu or username"/>
+      </div>
+
+      <div class="auth-form-group">
+        <label for="authPassword">Password</label>
+        <input type="password" id="authPassword" placeholder="Enter your password"/>
+      </div>
+
+      <div class="auth-message" id="authMessage"></div>
+
+      <button type="submit" class="auth-submit-btn" id="authSubmitBtn">Sign In</button>
+    </form>
+
+    <button class="auth-close-btn" onclick="closeAuthModal()">Close</button>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-backdrop" id="settingsBackdrop" onclick="if(event.target===this)closeSettings()">
+  <div class="modal settings-modal">
+    <h3>
+      Settings
+      <button class="settings-close" onclick="closeSettings()">✕</button>
+    </h3>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Appearance</div>
+      <div class="settings-item">
+        <span>Dark Mode</span>
+        <button class="settings-toggle active" onclick="this.classList.toggle('active')"></button>
+      </div>
+      <div class="settings-item">
+        <span>Compact View</span>
+        <button class="settings-toggle" onclick="this.classList.toggle('active')"></button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Notifications</div>
+      <div class="settings-item">
+        <span>Desktop Notifications</span>
+        <button class="settings-toggle active" onclick="this.classList.toggle('active')"></button>
+      </div>
+      <div class="settings-item">
+        <span>Sound Alerts</span>
+        <button class="settings-toggle active" onclick="this.classList.toggle('active')"></button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Privacy</div>
+      <div class="settings-item">
+        <span>Save History</span>
+        <button class="settings-toggle active" onclick="this.classList.toggle('active')"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="chat.js"></script>
+<script src="auth-modal.js"></script>
+<script src="logo-modal.js"></script>
+<script src="mobile-nav.js"></script>
+<script>
+  // Mobile-specific functions
+  function showAuthModal() {
+    document.getElementById('authModal').classList.add('open');
+    currentAuthMode = 'login';
+    switchAuthMode('login');
+    document.getElementById('authForm').reset();
+    document.getElementById('authMessage').classList.remove('success');
+    setTimeout(() => document.getElementById('authUsername').focus(), 80);
+  }
+
+  function closeAuthModal() {
+    document.getElementById('authModal').classList.remove('open');
+  }
+
+  function openSettings() {
+    document.getElementById('settingsBackdrop').classList.add('open');
+  }
+
+  function closeSettings() {
+    document.getElementById('settingsBackdrop').classList.remove('open');
+  }
+
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('minimized');
+  }
+
+  // Initialize
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeAuthModal();
+      closeLogoModal();
+      closeSettings();
+    }
+  });
+</script>
+
+</body>
+</html>
