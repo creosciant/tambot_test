@@ -7,7 +7,7 @@ A simple, responsive chat interface prototype for a university-focused AI assist
 - GitHub Pages link is currently not working
 - Project is just a prototype 
 - Login/signup functionalities are completely fake
-- While the site does not store any data at all, I strongly advise to not enter any sensitive information within any of the site functionality still
+- While the site does not store any data at all, I strongly advise to not enter any sensitive information within any of the site's functionalities still
 
 ## File Structure
 
