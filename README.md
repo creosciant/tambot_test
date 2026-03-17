@@ -1,6 +1,6 @@
 # TamBot - University AI Assistant
 
-A simple, responsive chat interface for a university-focused AI assistant.
+A simple, responsive chat interface prototype for a university-focused AI assistant.
 
 ## File Structure
 
@@ -14,20 +14,9 @@ A simple, responsive chat interface for a university-focused AI assistant.
 ## Features
 
 - Mobile-responsive design (tablet & mobile optimized)
-- Dark theme with gold accents
-- Real-time typing indicators
 - Greeting recognition system
 - Dual authentication (modal popup + full page)
-- Logo/image upload functionality
 - University-focused suggestions and responses
-
-## How to Use
-
-1. Open `main.html` in a web browser
-2. Click "Sign In" to access authentication
-3. Start chatting with the AI
-4. Use suggestions or type custom messages
-5. Click logo placeholder to upload a custom logo
 
 ## Theme Colors
 
@@ -41,3 +30,10 @@ A simple, responsive chat interface for a university-focused AI assistant.
 
 - Primary: Cormorant Garamond (serif)
 - Accent: DM Mono (monospace)
+
+## WARNING
+
+- GitHub Pages link is currently not working
+- Project is just a prototype 
+- Login/signup functionalities are completely fake
+- While the site does not store any data at all, I strongly advise to not enter any sensitive information within any of the site functionality still
